@@ -1,24 +1,28 @@
 # ============================================================
 # Dockerfile – Multi-stage build
-# Fix: prisma generate runs as root in builder stage.
-#      Production stage sets proper ownership before user switch.
-#      CMD only starts the app — schema is already in Supabase.
+#
+# Fix for Render (Alpine Linux 3.17+):
+#   Alpine dropped OpenSSL 1.1 – Prisma needs openssl installed
+#   explicitly. We also set binaryTargets in schema.prisma to
+#   linux-musl-openssl-3.0.x so the right engine is bundled.
 # ============================================================
 
 # ── Stage 1: Builder ─────────────────────────────────────────
 FROM node:20-alpine AS builder
 
+# Install OpenSSL (needed by Prisma engine at build & runtime)
+RUN apk add --no-cache openssl openssl-dev
+
 WORKDIR /app
 
-# Copy manifests first (better layer caching)
 COPY package*.json ./
 COPY tsconfig.json ./
 COPY prisma ./prisma/
 
-# Install ALL dependencies (dev included for compilation)
+# Install all deps (dev included for compilation)
 RUN npm ci
 
-# Generate Prisma client AS ROOT (has write permission)
+# Generate Prisma client with correct binary targets
 RUN npx prisma generate
 
 # Copy source and compile TypeScript
@@ -28,6 +32,9 @@ RUN npm run build
 # ── Stage 2: Production ──────────────────────────────────────
 FROM node:20-alpine AS production
 
+# Install OpenSSL so the Prisma query engine .node file can load
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -36,7 +43,7 @@ ENV NODE_ENV=production
 COPY package*.json ./
 RUN npm ci --only=production
 
-# Copy Prisma schema and pre-generated client from builder
+# Copy pre-generated Prisma client from builder (with correct binary)
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY prisma ./prisma/
@@ -48,18 +55,15 @@ COPY --from=builder /app/dist ./dist
 RUN addgroup -g 1001 -S nodejs && \
   adduser -S nodejs -u 1001 -G nodejs
 
-# ── Fix: Give nodejs user ownership of everything BEFORE switching ──
+# Give nodejs user ownership of the entire app directory
 RUN chown -R nodejs:nodejs /app
 
 USER nodejs
 
 EXPOSE 3000
 
-# Healthcheck for container orchestration
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget -qO- http://localhost:3000/api/v1/health || exit 1
 
-# ── Start server only — schema is already applied to Supabase ──
-# If you ever need migrations at deploy time, add a deploy hook
-# in Render dashboard instead of running them inside the container.
+# Schema already applied to Supabase — just start the server
 CMD ["node", "dist/index.js"]

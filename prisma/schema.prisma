@@ -1,0 +1,53 @@
+// ============================================================
+// Prisma Schema – Bitespeed Identity Reconciliation
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// -------------------------------------------------------
+// Enums
+// -------------------------------------------------------
+
+enum LinkPrecedence {
+  primary
+  secondary
+}
+
+// -------------------------------------------------------
+// Models
+// -------------------------------------------------------
+
+model Contact {
+  id             Int             @id @default(autoincrement())
+  phoneNumber    String?
+  email          String?
+  linkedId       Int?            // FK → primary contact
+  linkPrecedence LinkPrecedence  @default(primary)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?
+
+  // Self-referential relation
+  linkedContact  Contact?        @relation("ContactToLinked", fields: [linkedId], references: [id])
+  secondaries    Contact[]       @relation("ContactToLinked")
+
+  // -------------------------------------------------------
+  // Indexes – crucial for O(1) lookups in reconciliation
+  // -------------------------------------------------------
+  @@index([email])
+  @@index([phoneNumber])
+  @@index([linkedId])
+  @@index([linkPrecedence])
+  @@index([email, phoneNumber])
+  @@index([deletedAt])
+
+  @@map("contacts")
+}

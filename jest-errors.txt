@@ -1,0 +1,40 @@
+10:18:09 [f2550ca1-dc4a-45f0-b509-5a3103fec46b] [31merror[39m: [31mUnhandled error[39m {"service":"bitespeed-identity","error":"Unexpected DB failure","stack":"Error: Unexpected DB failure\n    at Object.<anonymous> (C:\\Users\\Hp\\IdeaProjects\\assessement\\src\\__tests__\\integration\\identify.integration.test.ts:169:44)\n    at Promise.then.completed (C:\\Users\\Hp\\IdeaProjects\\assessement\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Users\\Hp\\IdeaProjects\\assessement\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Users\\Hp\\IdeaProjects\\assessement\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async _runTest (C:\\Users\\Hp\\IdeaProjects\\assessement\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at async _runTestsForDescribeBlock (C:\\Users\\Hp\\IdeaProjects\\assessement\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at async _runTestsForDescribeBlock (C:\\Users\\Hp\\IdeaProjects\\assessement\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at async _runTestsForDescribeBlock (C:\\Users\\Hp\\IdeaProjects\\assessement\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at async run (C:\\Users\\Hp\\IdeaProjects\\assessement\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at async runAndTransformResultsToJestFormat (C:\\Users\\Hp\\IdeaProjects\\assessement\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at async jestAdapter (C:\\Users\\Hp\\IdeaProjects\\assessement\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at async runTestInternal (C:\\Users\\Hp\\IdeaProjects\\assessement\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at async runTest (C:\\Users\\Hp\\IdeaProjects\\assessement\\node_modules\\jest-runner\\build\\runTest.js:444:34)","url":"/api/v1/identify","method":"POST"}
+10:18:09 [f2550ca1-dc4a-45f0-b509-5a3103fec46b] [31merror[39m: [31mPOST /api/v1/identify 500[39m {"service":"bitespeed-identity","method":"POST","url":"/api/v1/identify","statusCode":500,"durationMs":3,"ip":"::ffff:127.0.0.1"}
+PASS src/__tests__/integration/identify.integration.test.ts
+  POST /api/v1/identify
+    Request Validation
+      ??? returns 400 when both email and phoneNumber are absent (48 ms)
+      ??? returns 400 for invalid email format (7 ms)
+      ??? returns 400 for empty body (5 ms)
+    Successful Requests
+      ??? returns 200 with email only (11 ms)
+      ??? returns 200 with phoneNumber only (7 ms)
+      ??? returns 200 with both email and phoneNumber (6 ms)
+      ??? attaches x-request-id header to response (6 ms)
+      ??? echoes back a provided x-request-id (6 ms)
+    Error Handling
+      ??? returns 500 when service throws unexpected error (10 ms)
+    GET /api/v1/health
+      ??? returns 200 with status ok (6 ms)
+    404 Handler
+      ??? returns 404 for unknown routes (5 ms)
+
+PASS src/__tests__/unit/contact.service.test.ts
+  identify ??? new contact creation
+    ??? creates a primary contact when no matches exist (1 ms)
+    ??? creates primary with only email provided (1 ms)
+    ??? creates primary with only phone provided (1 ms)
+    ??? throws ValidationError when neither email nor phone provided (1 ms)
+  identify ??? linking secondary contact
+    ??? links new secondary when phone matches primary but email is new (1 ms)
+  identify ??? merging two primary contacts
+    ??? demotes newer primary to secondary when two primaries link (1 ms)
+  identify ??? idempotency
+    ??? returns consistent result for identical repeated requests
+
+Test Suites: 2 passed, 2 total
+Tests:       18 passed, 18 total
+Snapshots:   0 total
+Time:        2.224 s, estimated 3 s
+Ran all test suites.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

@@ -1,10 +1,8 @@
 # ============================================================
-# Dockerfile
-# Multi-stage build for minimal production image.
-#
-# Stage 1 (builder): Installs all deps, compiles TypeScript
-# Stage 2 (production): Copies only the compiled output and
-#   production node_modules for a lean final image.
+# Dockerfile – Multi-stage build
+# Fix: prisma generate runs as root in builder stage.
+#      Production stage sets proper ownership before user switch.
+#      CMD only starts the app — schema is already in Supabase.
 # ============================================================
 
 # ── Stage 1: Builder ─────────────────────────────────────────
@@ -17,13 +15,13 @@ COPY package*.json ./
 COPY tsconfig.json ./
 COPY prisma ./prisma/
 
-# Install all dependencies (including devDeps for compilation)
+# Install ALL dependencies (dev included for compilation)
 RUN npm ci
 
-# Generate Prisma client
+# Generate Prisma client AS ROOT (has write permission)
 RUN npx prisma generate
 
-# Copy source and compile
+# Copy source and compile TypeScript
 COPY src ./src
 RUN npm run build
 
@@ -34,11 +32,11 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install only production dependencies
+# Install production dependencies only
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --only=production
 
-# Copy Prisma schema and generated client
+# Copy Prisma schema and pre-generated client from builder
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY prisma ./prisma/
@@ -48,7 +46,10 @@ COPY --from=builder /app/dist ./dist
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001 -G nodejs
+  adduser -S nodejs -u 1001 -G nodejs
+
+# ── Fix: Give nodejs user ownership of everything BEFORE switching ──
+RUN chown -R nodejs:nodejs /app
 
 USER nodejs
 
@@ -58,5 +59,7 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget -qO- http://localhost:3000/api/v1/health || exit 1
 
-# Run migrations then start the server
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+# ── Start server only — schema is already applied to Supabase ──
+# If you ever need migrations at deploy time, add a deploy hook
+# in Render dashboard instead of running them inside the container.
+CMD ["node", "dist/index.js"]

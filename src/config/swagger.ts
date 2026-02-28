@@ -4,6 +4,7 @@
 // ============================================================
 
 import swaggerJsdoc from 'swagger-jsdoc';
+import path from 'path';
 
 const options: swaggerJsdoc.Options = {
     definition: {
@@ -85,7 +86,13 @@ const options: swaggerJsdoc.Options = {
             },
         },
     },
-    apis: ['./src/routes/*.ts'],
+    // __dirname = dist/config/ in production, src/config/ in dev
+    // Both .js (prod) and .ts (dev) are listed so swagger-jsdoc
+    // always finds the JSDoc comments regardless of environment.
+    apis: [
+        path.join(__dirname, '../routes/*.js'),
+        path.join(__dirname, '../routes/*.ts'),
+    ],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
